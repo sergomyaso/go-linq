@@ -22,10 +22,15 @@ func main() {
 	fmt.Println(addedPerson)
 	fmt.Println(storage.Load(addedPerson.Id, lib.Person{}))
 
-	out := storage.Where(lib.Person{}, func(elem interface{}) bool {
+	pipe := lib.NewQueryCmd()
+
+	out := pipe.Where(storage, lib.Person{}, func(elem interface{}) bool {
+		p := elem.(*lib.Person)
+		return p.Name == "Test"
+	}).Where(storage, lib.Person{}, func(elem interface{}) bool {
 		p := elem.(*lib.Person)
 		return p.Surname == "Test"
-	})
+	}).Result()
 
 	fmt.Println(out)
 

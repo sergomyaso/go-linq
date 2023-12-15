@@ -6,9 +6,8 @@ import (
 )
 
 const (
-	OneToOne   = "one_to_one"
-	OneToMany  = "one_to_many"
-	ManyToMany = "many_to_many"
+	OneToOne  = "one_to_one"
+	OneToMany = "one_to_many"
 )
 
 type Table struct {
@@ -98,23 +97,6 @@ func (s *Storage) Delete(id int, target any) {
 	}
 
 	table.Delete(id)
-}
-
-func (s *Storage) Where(target any, filter func(elem interface{}) bool) []interface{} {
-	typeName := reflect.TypeOf(target).Name()
-	table, ok := s.tables[typeName]
-	if !ok {
-		return nil
-	}
-
-	output := make([]interface{}, 0)
-	for _, value := range table.store {
-		if filter(value) {
-			output = append(output, value)
-		}
-	}
-
-	return output
 }
 
 // Для сохранения зависимых объектов
