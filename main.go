@@ -8,13 +8,25 @@ import (
 func main() {
 	storage := lib.NewStorage()
 
-	jobs := []*lib.Job{{Name: "student"}}
+	job := &lib.Job{
+		Name: "student",
+	}
+
+	jobs := []*lib.Job{job}
 
 	person := lib.Person{
 		Name:    "Test",
 		Surname: "Test",
 		Jobs:    jobs,
 	}
+
+	personSec := lib.Person{
+		Name:    "Second",
+		Surname: "Test",
+		Jobs:    jobs,
+	}
+
+	job.People = []*lib.Person{&person, &personSec}
 
 	p, _ := storage.Store(&person)
 	addedPerson := p.(*lib.Person)
@@ -26,13 +38,16 @@ func main() {
 
 	out := pipe.Where(storage, lib.Person{}, func(elem interface{}) bool {
 		p := elem.(*lib.Person)
-		return p.Name == "Test"
-	}).Where(storage, lib.Person{}, func(elem interface{}) bool {
-		p := elem.(*lib.Person)
 		return p.Surname == "Test"
-	}).Result()
+	}).Project(storage, lib.Person{}, lib.ProjectedPerson{}).GroupBy(
+		storage, lib.Person{}, lib.GroupByName{}, "", func(acc any, elem interface{}) any {
+			p := elem.(lib.ProjectedPerson)
+			cur := acc.(string)
+			return cur + p.Name
+		},
+	).Result()
 
-	fmt.Println(out)
+	fmt.Println("GROUP_BY", out)
 
-	fmt.Println(storage.Load(1, lib.Job{}))
+	fmt.Println(storage.Load(1, lib.Person{}))
 }

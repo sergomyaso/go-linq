@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	OneToOne  = "one_to_one"
-	OneToMany = "one_to_many"
+	OneToOne   = "one_to_one"
+	OneToMany  = "one_to_many"
+	ManyToMany = "many_to_many"
 )
 
 type Table struct {
@@ -49,6 +50,9 @@ func NewStorage() *Storage {
 
 func (s *Storage) Store(value interface{}) (interface{}, error) {
 	entityId := int(reflect.ValueOf(value).Elem().FieldByName("Id").Int())
+
+	// маркируем как в обработке
+	reflect.ValueOf(value).Elem().FieldByName("Id").SetInt(-1)
 
 	value, err := s.storeRelations(value)
 	if err != nil {
@@ -124,6 +128,26 @@ func (s *Storage) storeRelations(value interface{}) (interface{}, error) {
 
 			for j := 0; j < sl.Len(); j++ {
 				fmt.Println(sl.Index(j).Elem().Type())
+				stored, err := s.Store(sl.Index(j).Interface())
+				if err != nil {
+					return nil, err
+				}
+
+				reflect.ValueOf(value).Elem().Field(i).Index(j).Set(reflect.ValueOf(stored))
+			}
+
+		case ManyToMany:
+			sl := reflect.ValueOf(value).Elem().Field(i)
+			if sl.Kind() != reflect.Slice {
+				return nil, fmt.Errorf("many_to_many related object is not a slice")
+			}
+
+			for j := 0; j < sl.Len(); j++ {
+				id := sl.Index(j).Elem().FieldByName("Id").Int()
+				if id != 0 {
+					continue
+				}
+
 				stored, err := s.Store(sl.Index(j).Interface())
 				if err != nil {
 					return nil, err
